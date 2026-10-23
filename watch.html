@@ -9,9 +9,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* Layout: dusk gradient, one huge count anchored low-left, event log beneath. Single committed dark look. */
+/* Layout: a live broadcast. Pill and sound at the top, a heartbeat line, then one huge count anchored low-left, event log beneath.
+   The heartbeat is the phone's pulse: it spikes on every skip and goes flat when the signal ends. */
 :root{
-  --ink:#0b1a21;--bone:#ece4d3;--lamp:#f1b45e;--mist:#b9cdd2;--glass:rgba(11,26,33,.58);
+  --ink:#0b1a21;--bone:#ece4d3;--lamp:#f1b45e;--mist:#b9cdd2;--glass:rgba(11,26,33,.58);--live:#ff5a4d;
   --display:'Bricolage Grotesque','Arial Narrow',Helvetica,sans-serif;
   --mono:'DM Mono',ui-monospace,Menlo,Consolas,monospace;
   --gutter:max(20px,env(safe-area-inset-left,0px));
@@ -24,16 +25,24 @@ html,body{min-height:100%;margin:0;background:var(--ink);color:var(--bone)}
 body{font-family:var(--mono);font-size:14px;line-height:1.45;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
   background:linear-gradient(to bottom,#27414f 0%,#6f6a62 30%,#2d5866 46%,#0b222b 100%) fixed;
   padding:var(--top) var(--gutter-r) var(--bottom) var(--gutter);transition:filter 6s ease 1s}
-body.final{filter:brightness(.45) saturate(.7)}
+body.dim{filter:brightness(.42) saturate(.6)}
 [hidden]{display:none!important}
-header{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mist)}
-.chip{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--bone);background:var(--glass);border:0;border-radius:999px;padding:8px 14px;cursor:pointer}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.chip{font:inherit;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone);background:var(--glass);border:0;border-radius:999px;padding:8px 14px;cursor:pointer}
 .chip:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7b8b90;margin-right:8px}
-.dot.on{background:var(--lamp)}
-main{margin-top:auto;padding-top:40px}
-h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,9vw,48px);letter-spacing:-.02em;line-height:1;margin:0 0 6px;text-wrap:balance}
-#n{display:block;font-family:var(--display);font-weight:800;font-size:clamp(130px,46vw,320px);line-height:.8;letter-spacing:-.05em;font-variant-numeric:tabular-nums;margin:10px 0 0}
+.pill{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;padding:8px 14px;border-radius:999px;background:var(--glass);color:var(--mist)}
+.pill i{width:9px;height:9px;border-radius:50%;background:#7b8b90}
+.pill.live{background:var(--live);color:#fff}
+.pill.live i{background:#fff;animation:pulse 1.4s ease-in-out infinite}
+.pill.lost{background:transparent;color:var(--live);box-shadow:inset 0 0 0 1.5px var(--live)}
+.pill.lost i{background:var(--live)}
+.pill.final{background:var(--lamp);color:var(--ink)}
+.pill.final i{background:var(--ink)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+main{margin-top:auto;padding-top:28px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,9vw,48px);letter-spacing:-.02em;line-height:1;margin:0 0 12px;text-wrap:balance}
+#ecg{display:block;width:100%;height:84px;margin:0 0 6px}
+#n{display:block;font-family:var(--display);font-weight:800;font-size:clamp(130px,46vw,320px);line-height:.8;letter-spacing:-.05em;font-variant-numeric:tabular-nums;margin:14px 0 0}
 #n.final{color:var(--lamp);animation:breath 7s ease-out 1 forwards}
 @keyframes breath{0%{text-shadow:0 0 40px rgba(241,180,94,.7)}60%{text-shadow:0 0 24px rgba(241,180,94,.3)}100%{text-shadow:0 0 0 rgba(241,180,94,0);opacity:.78}}
 .unit{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist)}
@@ -44,18 +53,19 @@ li time{font-variant-numeric:tabular-nums;flex:none}
 li span{min-width:0;overflow-wrap:anywhere;color:var(--bone)}
 .ring{position:fixed;left:30%;top:58%;width:20px;height:6px;margin:-3px 0 0 -10px;border:1.5px solid rgba(236,228,211,.8);border-radius:50%;pointer-events:none;animation:ring 1.6s ease-out forwards}
 @keyframes ring{to{transform:scale(18);opacity:0}}
-@media (prefers-reduced-motion:reduce){.ring{display:none}#n.final{animation:none}body{transition:none}}
+@media (prefers-reduced-motion:reduce){.ring{display:none}#n.final{animation:none}body{transition:none}.pill.live i{animation:none}}
 .empty{max-width:34ch;color:var(--bone)}
 </style>
 </head>
 <body>
 <header>
-  <span><i class="dot" id="dot"></i><span id="conn">Connecting</span></span>
+  <span class="pill" id="pill"><i></i><span id="pillTxt">Standby</span></span>
   <button class="chip" id="snd" type="button" aria-pressed="false">Sound off</button>
 </header>
 
 <main id="main">
   <h1 id="status">Waiting for a throw</h1>
+  <canvas id="ecg" aria-label="Heartbeat line. It spikes on every skip and goes flat when the signal ends."></canvas>
   <span id="n">0</span>
   <span class="unit">skips</span>
   <p id="note" hidden></p>
@@ -73,8 +83,9 @@ li span{min-width:0;overflow-wrap:anywhere;color:var(--bone)}
 var RELAY='https://ntfy.sh';   // must match the relay set in index.html
 function $(id){return document.getElementById(id);}
 var topic=(location.hash||'').slice(1);
-if(!/^[a-z0-9-]{8,64}$/.test(topic)){$('main').hidden=true;$('bad').hidden=false;$('dot').style.display='none';$('conn').textContent='No link';return;}
+if(!/^[a-z0-9-]{8,64}$/.test(topic)){$('main').hidden=true;$('bad').hidden=false;$('pill').hidden=true;return;}
 
+/* ---------- sound ---------- */
 var soundOn=false,ac=null;
 $('snd').addEventListener('click',function(){
   soundOn=!soundOn;this.textContent=soundOn?'Sound on':'Sound off';this.setAttribute('aria-pressed',String(soundOn));
@@ -88,7 +99,29 @@ function plink(n){
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.16);
   o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.2);
 }
+function flatline(){
+  if(!ac||!soundOn)return;
+  var t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type='sine';o.frequency.value=880;
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.09,t+.05);g.gain.setValueAtTime(.09,t+1.6);g.gain.exponentialRampToValueAtTime(.0001,t+2.1);
+  o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+2.2);
+}
 function ring(){var r=document.createElement('i');r.className='ring';document.body.appendChild(r);setTimeout(function(){if(r.parentNode)r.parentNode.removeChild(r);},1700);}
+
+/* ---------- state: standby | armed | air | skipping | lost | final ---------- */
+var phase='standby',connected=false,lastMsg=0,skipsSeen=0,LOST_AFTER=4.5;
+
+function setPill(){
+  var p=$('pill'),txt=$('pillTxt'),cls='pill',label='Standby';
+  if(!connected&&phase!=='final'&&phase!=='lost'){label='Reconnecting';}
+  else if(phase==='armed'||phase==='air'||phase==='skipping'){cls+=' live';label='Live';}
+  else if(phase==='lost'){cls+=' lost';label='Signal lost';}
+  else if(phase==='final'){cls+=' final';label='Farewell';}
+  p.className=cls;txt.textContent=label;
+}
+function setStatus(s){$('status').textContent=s;}
+function setCount(n){$('n').textContent=String(n);}
+function setPhase(p){phase=p;setPill();updateEcgMode();}
 
 function addLog(text,time){
   var li=document.createElement('li'),t=document.createElement('time'),s=document.createElement('span');
@@ -99,36 +132,83 @@ function addLog(text,time){
   var ul=$('log');ul.insertBefore(li,ul.firstChild);
   while(ul.children.length>8)ul.removeChild(ul.lastChild);
 }
-function setCount(n){$('n').textContent=String(n);}
-function setStatus(s){$('status').textContent=s;}
 function reset(){
-  document.body.classList.remove('final');$('n').classList.remove('final');
-  $('note').hidden=true;setCount(0);
+  document.body.classList.remove('dim');$('n').classList.remove('final');
+  $('note').hidden=true;setCount(0);skipsSeen=0;
 }
 
-function handle(text,time){
-  var fresh=(Date.now()/1000-time)<6,m;
-  if(/^Armed/.test(text)){reset();setStatus('Armed. Waiting for the throw');}
-  else if(text==='Thrown'){setStatus('In the air');}
+function handle(text,time,fresh){
+  var m;
+  if(fresh||phase==='standby'||phase==='armed')lastMsg=fresh?Date.now()/1000:time;
+  if(/^Armed/.test(text)){reset();setPhase('armed');setStatus('Armed. Waiting for the throw');}
+  else if(text==='Thrown'){document.body.classList.remove('dim');setPhase('air');setStatus('In the air');}
   else if((m=/^Skip (\d{1,3})$/.exec(text))){
-    setCount(+m[1]);setStatus('Skipping');
-    if(fresh){ring();plink(+m[1]);}
+    var n=+m[1];setCount(n);document.body.classList.remove('dim');setPhase('skipping');setStatus('Skipping');
+    skipsSeen=n;lastMsg=fresh?Date.now()/1000:time;
+    beat();
+    if(fresh){ring();plink(n);}
   }else if((m=/^Farewell: (\d{1,3}) skips?(?:\. ([\s\S]{0,80}))?$/.exec(text))){
-    setCount(+m[1]);setStatus(+m[1]===1?'One skip. Farewell':(+m[1]+' skips. Farewell'));
-    $('n').classList.add('final');document.body.classList.add('final');
+    var k=+m[1];setCount(k);setPhase('final');
+    setStatus(k===1?'One skip. Farewell':(k+' skips. Farewell'));
+    $('n').classList.add('final');document.body.classList.add('dim');
     if(m[2]){$('note').textContent=m[2];$('note').hidden=false;}
+    if(fresh)flatline();
   }else return;
   addLog(text,time);
 }
 
+/* a throw has started but the stream went quiet: the phone is gone */
+setInterval(function(){
+  if((phase==='air'||phase==='skipping')&&Date.now()/1000-lastMsg>LOST_AFTER){
+    setPhase('lost');
+    setStatus(skipsSeen>0?'Signal lost after '+skipsSeen+' skip'+(skipsSeen===1?'':'s'):'Signal lost');
+    document.body.classList.add('dim');
+    addLog('Signal lost',Date.now()/1000);
+    flatline();
+  }
+},500);
+
+/* ---------- heartbeat line ---------- */
+var cvs=$('ecg'),c=cvs.getContext('2d'),buf=[],queue=[],ecgMode='standby';
+var BEAT=[.04,.1,.04,-.12,.95,-.6,.08,.14,.24,.14,.05];
+function resizeEcg(){var dpr=Math.min(window.devicePixelRatio||1,2),w=cvs.clientWidth,h=cvs.clientHeight;cvs.width=Math.round(w*dpr);cvs.height=Math.round(h*dpr);c.setTransform(dpr,0,0,dpr,0,0);}
+window.addEventListener('resize',resizeEcg);resizeEcg();
+function beat(){if(queue.length>160)return;for(var i=0;i<BEAT.length;i++){queue.push(BEAT[i]);queue.push(BEAT[i]);}}
+function updateEcgMode(){ecgMode=(phase==='armed'||phase==='air'||phase==='skipping')?'live':(phase==='lost'||phase==='final')?'flat':'standby';if(ecgMode==='flat')queue.length=0;}
+function strokeColor(){return phase==='lost'?'#ff5a4d':phase==='final'?'#f1b45e':ecgMode==='live'?'#f1b45e':'rgba(185,205,210,.7)';}
+function frame(){
+  var w=cvs.clientWidth,h=cvs.clientHeight,v=0;
+  if(queue.length)v=queue.shift();
+  else if(ecgMode==='live')v=(Math.random()-.5)*.07;
+  else if(ecgMode==='standby')v=(Math.random()-.5)*.02;
+  buf.push(v);
+  var max=Math.ceil(w/2)+2;while(buf.length>max)buf.shift();
+  c.clearRect(0,0,w,h);
+  c.strokeStyle='rgba(236,228,211,.12)';c.lineWidth=1;c.beginPath();c.moveTo(0,h/2);c.lineTo(w,h/2);c.stroke();
+  c.strokeStyle=strokeColor();c.lineWidth=2;c.lineJoin='round';c.beginPath();
+  var x0=w-buf.length*2;
+  for(var i=0;i<buf.length;i++){var x=x0+i*2,y=h/2-buf[i]*h*.42;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}
+  c.stroke();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- relay ---------- */
+var me='';
+(function(){var a='abcdefghijklmnopqrstuvwxyz0123456789';for(var i=0;i<8;i++)me+=a.charAt(Math.floor(Math.random()*a.length));})();
+function announce(){try{fetch(RELAY+'/'+topic,{method:'POST',body:'Watching '+me,mode:'no-cors',keepalive:true}).catch(function(){});}catch(e){}}
+
 var es=new EventSource(RELAY+'/'+encodeURIComponent(topic)+'/sse?since=15m');
-es.onopen=function(){$('dot').classList.add('on');$('conn').textContent='Live';};
-es.onerror=function(){$('dot').classList.remove('on');$('conn').textContent='Reconnecting';};
+es.onopen=function(){connected=true;setPill();announce();};
+es.onerror=function(){connected=false;setPill();};
 es.onmessage=function(e){
   var d;try{d=JSON.parse(e.data);}catch(_){return;}
   if(!d||d.event!=='message'||typeof d.message!=='string')return;
-  handle(d.message,+d.time||Date.now()/1000);
+  var t=+d.time||Date.now()/1000;
+  handle(d.message,t,(Date.now()/1000-t)<6);
 };
+setInterval(announce,240000);   // keep the thrower's watcher count fresh
+setPill();
 })();
 </script>
 </body>
