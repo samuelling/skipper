@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b1a21">
+<title>Last Skip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one full-bleed dusk lake canvas; panels (intro, live meters, result) float over it, left-aligned. */
+:root{
+  --ink:#0b1a21;
+  --bone:#ece4d3;
+  --lamp:#f1b45e;
+  --mist:#b9cdd2;
+  --glass:rgba(11,26,33,.58);
+  --display:'Bricolage Grotesque','Arial Narrow',Helvetica,sans-serif;
+  --mono:'DM Mono',ui-monospace,Menlo,Consolas,monospace;
+  --gutter:max(20px,env(safe-area-inset-left,0px));
+  --gutter-r:max(20px,env(safe-area-inset-right,0px));
+  --top:max(16px,env(safe-area-inset-top,0px));
+  --bottom:max(20px,env(safe-area-inset-bottom,0px));
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--bone);overscroll-behavior:none}
+body{font-family:var(--mono);font-size:14px;line-height:1.45;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+canvas{position:fixed;inset:0;display:block;touch-action:none}
+[hidden]{display:none!important}
+
+.panel{position:fixed;inset:0;display:flex;flex-direction:column;pointer-events:none;
+  padding:var(--top) var(--gutter-r) var(--bottom) var(--gutter)}
+.panel>*{pointer-events:auto}
+
+h1{font-family:var(--display);font-weight:800;font-size:clamp(64px,22vw,150px);line-height:.86;letter-spacing:-.035em;margin:0;text-wrap:balance}
+h1 span{display:block}
+h1 span+span{color:var(--lamp);margin-left:.18em}
+.lede{max-width:34ch;margin:18px 0 26px;color:var(--bone);font-size:15px}
+.fine{max-width:38ch;color:var(--mist);font-size:12px;margin:18px 0 0}
+.btn{font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:-.01em;background:var(--lamp);color:var(--ink);
+  border:0;border-radius:999px;padding:16px 28px;cursor:pointer}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 1.5px rgba(236,228,211,.45)}
+.link{font:inherit;background:none;border:0;color:var(--mist);text-decoration:underline;text-underline-offset:3px;padding:10px 0;cursor:pointer}
+.btn:focus-visible,.link:focus-visible,.chip:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
+
+#intro{justify-content:flex-end;align-items:flex-start;padding-bottom:calc(var(--bottom) + 5vh)}
+
+#topbar{position:fixed;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:var(--top) var(--gutter-r) 0 var(--gutter);pointer-events:none;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mist)}
+#topbar>*{pointer-events:auto}
+.chip{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--bone);background:var(--glass);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+
+#count{position:fixed;left:var(--gutter);top:calc(var(--top) + 44px);pointer-events:none}
+#count b{display:block;font-family:var(--display);font-weight:800;font-size:clamp(88px,30vw,190px);line-height:.85;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+#count small{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist)}
+
+#ready{justify-content:flex-end}
+.meters{display:grid;gap:12px;background:var(--glass);border-radius:14px;padding:16px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);max-width:460px;width:100%}
+.row{display:grid;grid-template-columns:62px 1fr 74px;gap:12px;align-items:center;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.row output{text-align:right;font-variant-numeric:tabular-nums;color:var(--bone)}
+.bar{position:relative;height:8px;background:rgba(236,228,211,.14);border-radius:4px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--lamp)}
+.bar .band{position:absolute;top:0;bottom:0;background:rgba(185,205,210,.38)}
+.bar .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--bone)}
+.hint{margin:14px 0 0;max-width:46ch;color:var(--bone);font-size:13px}
+.hint em{font-style:normal;color:var(--lamp)}
+
+#result{justify-content:flex-end;background:linear-gradient(to top,rgba(5,12,16,.86) 18%,rgba(5,12,16,0) 70%);
+  opacity:0;transition:opacity .9s ease}
+#result.on{opacity:1}
+#result .big{font-family:var(--display);font-weight:800;font-size:clamp(110px,40vw,230px);line-height:.82;letter-spacing:-.05em;margin:0;font-variant-numeric:tabular-nums}
+#result .label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);margin:4px 0 0}
+#result .verdict{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.02em;margin:18px 0 4px;text-wrap:balance}
+#result .sub{color:var(--mist);margin:0 0 16px;max-width:40ch}
+dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;margin:0 0 22px;max-width:360px}
+dl div{border-top:1px solid rgba(236,228,211,.22);padding-top:8px}
+dt{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+dd{margin:2px 0 0;font-size:17px;font-variant-numeric:tabular-nums}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+#toast{position:fixed;left:50%;top:calc(var(--top) + 52px);transform:translate(-50%,-8px);background:var(--bone);color:var(--ink);padding:10px 16px;border-radius:999px;
+  font-size:13px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:calc(100vw - 40px);text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){#result,#toast{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="A dusk lake. Your phone skips across it."></canvas>
+
+<div id="topbar">
+  <span id="best">Best 0</span>
+  <button class="chip" id="soundBtn" type="button" aria-pressed="true">Sound on</button>
+</div>
+
+<div id="count" hidden><b id="countNum">0</b><small>skips</small></div>
+
+<section class="panel" id="intro">
+  <h1><span>Last</span><span>Skip</span></h1>
+  <p class="lede">Swing your phone sidearm like a flat stone. Keep a firm grip. The lake does the rest.</p>
+  <button class="btn" id="startBtn" type="button">Pick it up</button>
+  <button class="link" id="swipeBtn" type="button">No motion sensor? Use swipe mode</button>
+  <p class="fine">Nothing leaves your hand. The page reads the phone's motion sensors to score the throw, and the sinking is only a drawing.</p>
+</section>
+
+<section class="panel" id="ready" hidden>
+  <div class="meters" id="meters">
+    <div class="row"><span>Swing</span><div class="bar"><i id="mSwing"></i><span class="tick" id="tSwing"></span></div><output id="vSwing">0&deg;/s</output></div>
+    <div class="row"><span>Tilt</span><div class="bar"><span class="band" id="bTilt"></span><i id="mTilt"></i></div><output id="vTilt">0&deg;</output></div>
+    <div class="row"><span>Spin</span><div class="bar"><i id="mSpin"></i></div><output id="vSpin">0&deg;/s</output></div>
+  </div>
+  <p class="hint" id="hint">Hold it flat, tilted about <em>20&deg;</em>. Swing sidearm, stop your hand, keep hold.</p>
+</section>
+
+<section class="panel" id="result" hidden>
+  <p class="big" id="rBig">0</p>
+  <p class="label">skips</p>
+  <p class="verdict" id="rVerdict"></p>
+  <p class="sub" id="rSub"></p>
+  <dl>
+    <div><dt>Distance</dt><dd id="rDist">0 m</dd></div>
+    <div><dt>Release speed</dt><dd id="rSpeed">0 m/s</dd></div>
+    <div><dt>Tilt</dt><dd id="rTilt">0&deg;</dd></div>
+    <div><dt>Spin</dt><dd id="rSpin">0&deg;/s</dd></div>
+  </dl>
+  <div class="actions">
+    <button class="btn" id="againBtn" type="button">Throw again</button>
+    <button class="btn ghost" id="copyBtn" type="button">Copy result</button>
+  </div>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- tuning ---------- */
+var TUNE={
+  swingStart:200,   // deg/s: a swing begins above this
+  swingMin:260,     // deg/s: peak needed for a real throw
+  releaseFrac:.55,  // release = angular speed falls below this fraction of the peak
+  armToSpeed:.55,   // m/s of stone speed per rad/s of peak rotation
+  vMin:2, vMax:14,
+  idealTilt:20,
+  PX:40,            // pixels per metre in the scene
+  sinkSecs:2.6
+};
+
+/* ---------- skip physics (pure) ---------- */
+// SIM-START
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function simulate(v0,theta0,spin,rnd){
+  var out=[],v=v0,th=theta0;
+  for(var n=0;n<80;n++){
+    var q=Math.exp(-Math.pow((th-20)/14,2));          // how close the angle is to the ~20 degree sweet spot
+    if(v<2.2||th<3||th>55||q<0.04)break;               // too slow, too flat, too steep: the stone sinks
+    var loss=(0.115-0.04*Math.min(spin,500)/500)+0.24*(1-q);
+    var vOut=v*(1-loss);
+    out.push({v:v,vOut:vOut,th:th,q:q});
+    v=vOut;
+    var sigma=9/(1+spin/150);                           // spin steadies the stone (gyroscopic stability)
+    th=20+(th-20)*0.8+(rnd()-0.5)*2*sigma;
+  }
+  return out;
+}
+// SIM-END
+
+/* ---------- helpers ---------- */
+function $(id){return document.getElementById(id);}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function lerp(a,b,u){return a+(b-a)*u;}
+function ease(u){return u*u*(3-2*u);}
+var cv=$('scene'),ctx=cv.getContext('2d');
+var W=0,H=0,glints=[];
+function resize(){
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth;H=window.innerHeight;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',resize);resize();
+(function(){var r=mulberry32(7);for(var i=0;i<54;i++)glints.push({fx:r()*4000,z:r(),w:r()});})();
+
+var toastTimer=0;
+function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('on');},2200);}
+
+/* ---------- state ---------- */
+var state='intro',mode='motion',cooldownUntil=0,soundOn=true;
+var best=0;
+try{best=parseInt(localStorage.getItem('lastskip.best'),10)||0;}catch(e){}
+function showBest(){$('best').textContent='Best '+best;}
+showBest();
+
+function setState(s){
+  state=s;
+  $('intro').hidden=s!=='intro';
+  $('ready').hidden=s!=='ready';
+  $('count').hidden=s!=='flying';
+  var res=$('result');
+  if(s==='result'){res.hidden=false;void res.offsetWidth;res.classList.add('on');}
+  else{res.classList.remove('on');res.hidden=true;}
+}
+
+/* ---------- audio ---------- */
+var ac=null,noiseBuf=null;
+function initAudio(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!ac)ac=new AC();
+    if(ac.state==='suspended')ac.resume();
+    if(!noiseBuf){noiseBuf=ac.createBuffer(1,ac.sampleRate*1,ac.sampleRate);var d=noiseBuf.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
+  }catch(e){ac=null;}
+}
+function plink(n){
+  if(!ac||!soundOn)return;
+  var t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type='sine';o.frequency.setValueAtTime(1250*Math.pow(.955,n),t);o.frequency.exponentialRampToValueAtTime(420*Math.pow(.955,n),t+.09);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.16);
+  o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.2);
+}
+function plunk(){
+  if(!ac||!soundOn)return;
+  var t=ac.currentTime,s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();
+  s.buffer=noiseBuf;f.type='lowpass';f.frequency.setValueAtTime(900,t);f.frequency.exponentialRampToValueAtTime(180,t+.6);
+  g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.0001,t+.7);
+  s.connect(f);f.connect(g);g.connect(ac.destination);s.start(t);s.stop(t+.75);
+  var o=ac.createOscillator(),g2=ac.createGain();
+  o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(48,t+.5);
+  g2.gain.setValueAtTime(.3,t);g2.gain.exponentialRampToValueAtTime(.0001,t+.6);
+  o.connect(g2);g2.connect(ac.destination);o.start(t);o.stop(t+.65);
+}
+function buzz(ms){try{if(navigator.vibrate)navigator.vibrate(ms);}catch(e){}}
+
+/* ---------- sensors ---------- */
+var gotEvents=false,grav={x:0,y:0,z:9.8,init:false};
+var live={w:0,wMax:0,spin:0,spinMax:0,tilt:0};
+var sw={active:false,peak:0,spin:0,t0:0,tilt:0};
+var freeFrames=0;
+
+function tiltOf(g){var m=Math.hypot(g.x,g.y,g.z)||9.8;return Math.acos(Math.min(1,Math.abs(g.z)/m))*180/Math.PI;}
+
+function onMotion(e){
+  var r=e.rotationRate,a=e.accelerationIncludingGravity;
+  if(!r||!a||a.x==null||a.y==null||a.z==null)return;
+  gotEvents=true;
+  var now=performance.now();
+  var w=Math.hypot(r.alpha||0,r.beta||0,r.gamma||0);   // deg/s on both iOS and Android
+  var spinNow=Math.abs(r.alpha||0);                     // rotation about the screen normal, like a stone's spin
+  if(!grav.init){grav.x=a.x;grav.y=a.y;grav.z=a.z;grav.init=true;}
+  var k=.1;grav.x+=(a.x-grav.x)*k;grav.y+=(a.y-grav.y)*k;grav.z+=(a.z-grav.z)*k;   // axis signs differ by platform, so only magnitudes are used
+  live.w=w;live.spin=spinNow;live.tilt=tiltOf(grav);
+  live.wMax=Math.max(w,live.wMax*.97);live.spinMax=Math.max(spinNow,live.spinMax*.97);
+  if(state!=='ready'||mode!=='motion'||now<cooldownUntil)return;
+
+  var am=Math.hypot(a.x,a.y,a.z);
+  if(am<2.5){freeFrames++;if(freeFrames===8){toast('Free fall detected. Please keep hold of it.');}}else freeFrames=0;
+
+  if(!sw.active){
+    if(w>TUNE.swingStart){sw.active=true;sw.peak=w;sw.spin=spinNow;sw.t0=now;sw.tilt=live.tilt;}
+  }else{
+    if(w>sw.peak)sw.peak=w;
+    if(spinNow>sw.spin)sw.spin=spinNow;
+    if(w<sw.peak*TUNE.releaseFrac||now-sw.t0>1200){
+      var peak=sw.peak,spin=sw.spin,tilt=live.tilt;
+      sw.active=false;
+      if(peak<TUNE.swingMin){toast('Too gentle. More wrist.');cooldownUntil=now+600;}
+      else{launch(peak,tilt,spin);}
+    }
+  }
+}
+
+function startMotion(){
+  window.addEventListener('devicemotion',onMotion);
+  gotEvents=false;
+  setTimeout(function(){
+    if(state==='ready'&&mode==='motion'&&!gotEvents){
+      mode='swipe';updateHint();toast('No motion data here. Swipe mode on.');
+    }
+  },1600);
+}
+
+/* ---------- swipe fallback ---------- */
+var pts=null;
+cv.addEventListener('pointerdown',function(e){
+  if(state!=='ready'||mode!=='swipe')return;
+  pts=[{x:e.clientX,y:e.clientY,t:performance.now()}];
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+});
+cv.addEventListener('pointermove',function(e){
+  if(!pts)return;
+  var t=performance.now();pts.push({x:e.clientX,y:e.clientY,t:t});
+  while(pts.length>2&&t-pts[0].t>140)pts.shift();
+});
+function endSwipe(e){
+  if(!pts)return;
+  var p=pts;pts=null;
+  if(state!=='ready'||mode!=='swipe'||p.length<2)return;
+  var a=p[0],b=p[p.length-1],dt=(b.t-a.t)/1000;
+  if(dt<.016){return;}
+  var vx=(b.x-a.x)/dt,vy=(b.y-a.y)/dt,sp=Math.hypot(vx,vy);
+  if(sp<500){toast('Flick faster.');return;}
+  var up=Math.atan2(-vy,Math.abs(vx))*180/Math.PI;
+  var peak=sp*.4,tilt=clamp(22+up*.7+(Math.random()-.5)*10,2,70);
+  var spin=120+sp*.2*(.6+Math.random()*.8);
+  launch(peak,tilt,spin);
+}
+cv.addEventListener('pointerup',endSwipe);
+cv.addEventListener('pointercancel',function(){pts=null;});
+window.addEventListener('keydown',function(e){
+  if(e.code==='Space'&&state==='ready'){e.preventDefault();launch(450+Math.random()*500,10+Math.random()*26,150+Math.random()*350);}
+});
+
+function updateHint(){
+  var motion=mode==='motion';
+  $('meters').hidden=!motion;
+  $('hint').innerHTML=motion
+    ?'Hold it flat, tilted about <em>20&deg;</em>. Swing sidearm, stop your hand, keep hold.'
+    :'Swipe across the screen like a flick of the wrist. A flatter, faster swipe skips farther. Space bar also throws.';
+}
+
+/* ---------- a throw ---------- */
+var flight=null,ripples=[],drops=[],bubbles=[],camX=0;
+var rng=mulberry32(Date.now()&0xffffffff);
+
+function launch(peakDeg,tiltDeg,spinDeg){
+  var v=clamp(peakDeg*Math.PI/180*TUNE.armToSpeed,TUNE.vMin,TUNE.vMax);
+  var bounces=simulate(v,tiltDeg,spinDeg,rng);
+  var segs=[],t=0,x=0,PX=TUNE.PX;
+  segs.push({kind:'launch',t0:0,t1:.55,x0:0,x1:2.5*PX,h:70,th:tiltDeg});
+  t=.55;x=2.5*PX;
+  bounces.forEach(function(b){
+    var d=.06*b.vOut*b.vOut*PX,D=clamp(.2+.045*b.vOut,.24,.7);
+    segs.push({kind:'hop',t0:t,t1:t+D,x0:x,x1:x+d,h:14+b.vOut*5,th:b.th});
+    t+=D;x+=d;
+  });
+  var n=bounces.length;
+  flight={
+    segs:segs,n:n,tEnd:t,xEnd:x,start:performance.now(),next:0,counted:0,
+    v:v,tilt:tiltDeg,spin:spinDeg,peak:peakDeg,dist:(x-2.5*PX)/PX,done:false
+  };
+  ripples=[];drops=[];bubbles=[];
+  $('countNum').textContent='0';
+  setState('flying');
+  buzz(20);
+}
+
+/* ---------- rendering ---------- */
+function waterLine(){return H*.74;}
+function horizon(){return H*.44;}
+
+function drawScene(time,camX){
+  var hy=horizon();
+  var g=ctx.createLinearGradient(0,0,0,hy);g.addColorStop(0,'#27414f');g.addColorStop(1,'#d2ac8c');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,hy+1);
+  var sx=W*.78,rg=ctx.createRadialGradient(sx,hy,0,sx,hy,W*.55);
+  rg.addColorStop(0,'rgba(255,214,160,.5)');rg.addColorStop(1,'rgba(255,214,160,0)');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,W,hy+1);
+  ctx.fillStyle='#1d3440';ctx.beginPath();ctx.moveTo(0,hy+1);
+  for(var x=0;x<=W+8;x+=8){var s=x+camX*.05;ctx.lineTo(x,hy-14-11*Math.sin(s*.011+1)-6*Math.sin(s*.031)-4*Math.sin(s*.07));}
+  ctx.lineTo(W,hy+1);ctx.closePath();ctx.fill();
+  var wg=ctx.createLinearGradient(0,hy,0,H);wg.addColorStop(0,'#35616e');wg.addColorStop(1,'#0b222b');
+  ctx.fillStyle=wg;ctx.fillRect(0,hy,W,H-hy);
+  for(var i=0;i<16;i++){
+    var u=i/16,y=hy+2+u*u*(H-hy)*.8,wd=(70-i*3)*(1+.2*Math.sin(time*.9+i*2.1));
+    ctx.fillStyle='rgba(255,214,160,'+(.2-i*.01).toFixed(3)+')';
+    ctx.fillRect(sx+Math.sin(time*.8+i*1.7)*(8+i*3)-wd/2,y,wd,1.5+u*2.5);
+  }
+  var span=W+120;
+  for(var j=0;j<glints.length;j++){
+    var gl=glints[j],par=.25+gl.z*.75;
+    var gx=((gl.fx-camX*par)%span+span)%span-60;
+    var gy=hy+8+gl.z*gl.z*(H-hy-14);
+    ctx.fillStyle='rgba(236,228,211,'+(.08+gl.z*.2).toFixed(3)+')';
+    ctx.fillRect(gx,gy,6+gl.w*34*gl.z+6,1+gl.z*1.6);
+  }
+}
+
+function drawRipples(now,camX){
+  var wy=waterLine()+8;
+  for(var i=ripples.length-1;i>=0;i--){
+    var r=ripples[i],age=(now-r.t)/1000;
+    if(age>1.9){ripples.splice(i,1);continue;}
+    for(var k=0;k<2;k++){
+      var a=age-k*.18;if(a<0)continue;
+      var rx=(8+a*(70+r.size*10))*(1+r.size*.03),al=Math.max(0,1-a/1.8)*.7;
+      ctx.strokeStyle='rgba(236,228,211,'+al.toFixed(3)+')';ctx.lineWidth=1.6-a*.5;
+      ctx.beginPath();ctx.ellipse(r.x-camX,wy,rx,rx*.17,0,0,Math.PI*2);ctx.stroke();
+    }
+  }
+}
+
+function spawnSplash(x,big,now){
+  var c=big?16:7;
+  for(var i=0;i<c;i++)drops.push({x:x,y:0,vx:(Math.random()-.5)*(big?120:70),vy:60+Math.random()*(big?200:110),t:now});
+}
+function drawDrops(now,camX){
+  var wy=waterLine();
+  for(var i=drops.length-1;i>=0;i--){
+    var d=drops[i],a=(now-d.t)/1000;
+    if(a>.7){drops.splice(i,1);continue;}
+    var x=d.x+d.vx*a,y=d.vy*a-520*a*a;
+    ctx.fillStyle='rgba(236,228,211,'+(1-a/.7).toFixed(3)+')';
+    ctx.beginPath();ctx.arc(x-camX,wy-y,1.8,0,Math.PI*2);ctx.fill();
+  }
+}
+
+function slab(cx,cy,rotDeg){
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(-rotDeg*Math.PI/180);
+  ctx.fillStyle='#ece4d3';ctx.beginPath();ctx.roundRect?ctx.roundRect(-32,-4,64,8,4):ctx.rect(-32,-4,64,8);ctx.fill();
+  ctx.fillStyle='#f1b45e';ctx.fillRect(-28,-4,56,2);
+  ctx.restore();
+}
+
+function drawPhoneSinking(cx,topY,u,count,now){
+  // The slab turns to face us as it goes under; the screen shows the final count and dims.
+  var e=ease(u),w=lerp(64,58,e),h=lerp(9,118,e),wy=waterLine();
+  var y=topY+e*120;
+  var glow=Math.pow(1-u,1.4);
+  var flick=u>.55?.7+.3*Math.sin(now/45):1;
+  ctx.save();ctx.translate(cx,y);
+  ctx.rotate(lerp(-.1,0,e));
+  ctx.fillStyle='#ece4d3';ctx.beginPath();ctx.roundRect?ctx.roundRect(-w/2,-h/2,w,h,lerp(4,10,e)):ctx.rect(-w/2,-h/2,w,h);ctx.fill();
+  if(e>.12){
+    var iw=w-8,ih=h-12;
+    ctx.fillStyle='#0b1a21';ctx.fillRect(-iw/2,-ih/2,iw,ih);
+    ctx.globalAlpha=clamp(glow*flick,0,1);
+    var lg=ctx.createRadialGradient(0,0,2,0,0,ih*.7);lg.addColorStop(0,'rgba(241,180,94,.55)');lg.addColorStop(1,'rgba(241,180,94,0)');
+    ctx.fillStyle=lg;ctx.fillRect(-iw/2,-ih/2,iw,ih);
+    ctx.fillStyle='#f1b45e';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='500 '+Math.round(count>=10?28:36)+'px "DM Mono",monospace';
+    ctx.fillText(String(count),0,-4);
+    ctx.font='500 9px "DM Mono",monospace';ctx.fillText('SKIPS',0,ih*.32);
+    ctx.globalAlpha=1;
+  }else{
+    ctx.fillStyle='#f1b45e';ctx.fillRect(-w/2+4,-h/2,w-8,2);
+  }
+  ctx.restore();
+  // water closes over it
+  var ov=ctx.createLinearGradient(0,wy,0,H);
+  ov.addColorStop(0,'rgba(36,86,100,'+(.1+.5*e).toFixed(3)+')');ov.addColorStop(1,'rgba(8,26,34,'+(.5+.4*e).toFixed(3)+')');
+  ctx.fillStyle=ov;ctx.fillRect(0,wy+4,W,H-wy-4);
+}
+
+function drawBubbles(cx,y0,ts,camX){
+  for(var i=0;i<9;i++){
+    var life=clamp(ts*1.2-i*.07,0,1);if(life<=0||life>=1)continue;
+    var bx=cx+Math.sin(i*7.3+ts*4)*16,by=y0+40-life*(60+i*8);
+    ctx.strokeStyle='rgba(236,228,211,'+(.6*(1-life)).toFixed(3)+')';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(bx,by,2+(i%3)*1.4,0,Math.PI*2);ctx.stroke();
+  }
+}
+
+function pose(f,tSec){
+  var segs=f.segs;
+  for(var i=0;i<segs.length;i++){
+    var s=segs[i];
+    if(tSec<=s.t1){
+      var u=clamp((tSec-s.t0)/(s.t1-s.t0),0,1);
+      return{x:lerp(s.x0,s.x1,u),y:s.kind==='launch'?s.h*(1-u*u):s.h*4*u*(1-u),rot:s.th,seg:i};
+    }
+  }
+  return null;
+}
+
+var scrollIdle=0;
+function frame(now){
+  var time=now/1000;
+  ctx.clearRect(0,0,W,H);
+  var wy=waterLine();
+  if(state==='flying'||state==='result'){
+    var f=flight,tSec=(now-f.start)/1000;
+    // contacts: ripples, splashes, counter, sound
+    while(f.next<=f.n&&tSec>=f.segs[f.next].t1){
+      var seg=f.segs[f.next],rebound=f.next<f.n;
+      ripples.push({x:seg.x1,t:now,size:rebound?clamp(f.v/3,1,5):4});
+      spawnSplash(seg.x1,!rebound,now);
+      if(rebound){f.counted++;$('countNum').textContent=String(f.counted);plink(f.counted);buzz(12);}
+      else{plunk();buzz(60);}
+      f.next++;
+    }
+    var p=pose(f,tSec),px,py,rot,sinking=false,ts=0;
+    if(p){px=p.x;py=wy-p.y;rot=p.rot;}
+    else{
+      sinking=true;ts=clamp((tSec-f.tEnd)/TUNE.sinkSecs,0,1);
+      px=f.xEnd+ts*34;py=wy;rot=f.segs[f.segs.length-1].th;
+    }
+    camX=px-W*.32;
+    drawScene(time,camX);
+    drawRipples(now,camX);
+    drawDrops(now,camX);
+    if(!sinking){
+      // contact shadow
+      ctx.fillStyle='rgba(5,14,18,'+(.28/(1+(wy-py)/40)).toFixed(3)+')';
+      ctx.beginPath();ctx.ellipse(px-camX,wy+8,26,4,0,0,Math.PI*2);ctx.fill();
+      slab(px-camX,py,rot);
+    }else{
+      drawPhoneSinking(px-camX,wy,ts,f.counted,now);
+      drawBubbles(px-camX,wy,ts,camX);
+      ctx.fillStyle='rgba(3,9,12,'+(ts*.5).toFixed(3)+')';ctx.fillRect(0,0,W,H);
+      if(ts>=1&&!f.done){f.done=true;finish(f);}
+    }
+  }else{
+    camX=0;scrollIdle+=.15;
+    drawScene(time,scrollIdle);
+    if(state==='ready'||state==='intro'){
+      if(Math.random()<.012)ripples.push({x:W*(.15+Math.random()*.7),t:now,size:1+Math.random()*2});
+      drawRipples(now,0);
+    }
+  }
+  if(state==='ready'&&mode==='motion')updateMeters();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- meters ---------- */
+function updateMeters(){
+  var s=clamp(live.wMax/1200,0,1),sp=clamp(live.spinMax/800,0,1),tl=clamp(live.tilt/60,0,1);
+  $('mSwing').style.width=(s*100)+'%';
+  $('mSpin').style.width=(sp*100)+'%';
+  $('mTilt').style.width=(tl*100)+'%';
+  $('vSwing').textContent=Math.round(live.wMax)+'°/s';
+  $('vSpin').textContent=Math.round(live.spinMax)+'°/s';
+  $('vTilt').textContent=Math.round(live.tilt)+'°';
+}
+(function(){
+  $('tSwing').style.left=(TUNE.swingMin/1200*100)+'%';
+  var b=$('bTilt');b.style.left=(14/60*100)+'%';b.style.width=((26-14)/60*100)+'%';
+})();
+
+/* ---------- result ---------- */
+function verdictFor(n){
+  if(n===0)return'Plonk.';
+  if(n<=2)return'A polite skip.';
+  if(n<=5)return'Respectable.';
+  if(n<=9)return'Now it is skipping.';
+  if(n<=15)return'Stone cold.';
+  if(n<=24)return'Lake legend.';
+  return'Record territory.';
+}
+function tipFor(f){
+  if(f.tilt<10||f.tilt>32)return'Tilt was '+Math.round(f.tilt)+'°. The sweet spot is near 20°.';
+  if(f.peak<500)return'A little more wrist would carry it farther.';
+  if(f.spin<250)return'Flick the wrist so it spins; spin keeps the angle steady.';
+  return'Clean throw. Angle, speed and spin all in range.';
+}
+var lastText='';
+function finish(f){
+  var n=f.n,newBest=n>best;
+  if(newBest){best=n;try{localStorage.setItem('lastskip.best',String(best));}catch(e){}showBest();}
+  $('rBig').textContent=String(n);
+  $('rVerdict').textContent=newBest&&n>0?verdictFor(n)+' New best.':verdictFor(n);
+  $('rSub').textContent=tipFor(f)+' Your phone is dry and still in your hand.';
+  $('rDist').textContent=f.dist.toFixed(1)+' m';
+  $('rSpeed').textContent=f.v.toFixed(1)+' m/s';
+  $('rTilt').textContent=Math.round(f.tilt)+'°';
+  $('rSpin').textContent=Math.round(f.spin)+'°/s';
+  lastText='Last Skip: '+n+' skip'+(n===1?'':'s')+', '+f.dist.toFixed(1)+' m. '+verdictFor(n);
+  setState('result');
+}
+
+/* ---------- buttons ---------- */
+function beginReady(){
+  live.wMax=0;live.spinMax=0;sw.active=false;freeFrames=0;
+  cooldownUntil=performance.now()+500;
+  updateHint();setState('ready');
+}
+$('startBtn').addEventListener('click',function(){
+  initAudio();
+  var DME=window.DeviceMotionEvent;
+  if(!DME){mode='swipe';beginReady();toast('No motion sensor found. Swipe mode on.');return;}
+  mode='motion';
+  if(typeof DME.requestPermission==='function'){
+    DME.requestPermission().then(function(res){
+      if(res==='granted'){startMotion();}
+      else{mode='swipe';toast('Motion access declined. Swipe mode on.');}
+      beginReady();
+    }).catch(function(){mode='swipe';toast('Motion access unavailable. Swipe mode on.');beginReady();});
+  }else{startMotion();beginReady();}
+});
+$('swipeBtn').addEventListener('click',function(){initAudio();mode='swipe';beginReady();});
+$('againBtn').addEventListener('click',function(){beginReady();});
+$('copyBtn').addEventListener('click',function(){
+  function fallback(){
+    var ta=document.createElement('textarea');ta.value=lastText;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);toast(ok?'Copied.':lastText);
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(lastText).then(function(){toast('Copied.');},fallback);}
+  else fallback();
+});
+$('soundBtn').addEventListener('click',function(){
+  soundOn=!soundOn;this.textContent=soundOn?'Sound on':'Sound off';this.setAttribute('aria-pressed',String(soundOn));
+  if(soundOn)initAudio();
+});
+
+setState('intro');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
