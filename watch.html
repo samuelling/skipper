@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1a21">
+<title>Farewell Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: dusk gradient, one huge count anchored low-left, event log beneath. Single committed dark look. */
+:root{
+  --ink:#0b1a21;--bone:#ece4d3;--lamp:#f1b45e;--mist:#b9cdd2;--glass:rgba(11,26,33,.58);
+  --display:'Bricolage Grotesque','Arial Narrow',Helvetica,sans-serif;
+  --mono:'DM Mono',ui-monospace,Menlo,Consolas,monospace;
+  --gutter:max(20px,env(safe-area-inset-left,0px));
+  --gutter-r:max(20px,env(safe-area-inset-right,0px));
+  --top:max(16px,env(safe-area-inset-top,0px));
+  --bottom:max(20px,env(safe-area-inset-bottom,0px));
+}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0;background:var(--ink);color:var(--bone)}
+body{font-family:var(--mono);font-size:14px;line-height:1.45;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
+  background:linear-gradient(to bottom,#27414f 0%,#6f6a62 30%,#2d5866 46%,#0b222b 100%) fixed;
+  padding:var(--top) var(--gutter-r) var(--bottom) var(--gutter);transition:filter 6s ease 1s}
+body.final{filter:brightness(.45) saturate(.7)}
+[hidden]{display:none!important}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mist)}
+.chip{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--bone);background:var(--glass);border:0;border-radius:999px;padding:8px 14px;cursor:pointer}
+.chip:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7b8b90;margin-right:8px}
+.dot.on{background:var(--lamp)}
+main{margin-top:auto;padding-top:40px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,9vw,48px);letter-spacing:-.02em;line-height:1;margin:0 0 6px;text-wrap:balance}
+#n{display:block;font-family:var(--display);font-weight:800;font-size:clamp(130px,46vw,320px);line-height:.8;letter-spacing:-.05em;font-variant-numeric:tabular-nums;margin:10px 0 0}
+#n.final{color:var(--lamp);animation:breath 7s ease-out 1 forwards}
+@keyframes breath{0%{text-shadow:0 0 40px rgba(241,180,94,.7)}60%{text-shadow:0 0 24px rgba(241,180,94,.3)}100%{text-shadow:0 0 0 rgba(241,180,94,0);opacity:.78}}
+.unit{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist)}
+#note{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:18px 0 0;max-width:28ch;text-wrap:balance;overflow-wrap:anywhere}
+ul{list-style:none;margin:22px 0 0;padding:0;max-width:360px;display:grid;gap:6px;font-size:12px;color:var(--mist)}
+li{display:flex;gap:14px;border-top:1px solid rgba(236,228,211,.2);padding-top:6px;min-width:0}
+li time{font-variant-numeric:tabular-nums;flex:none}
+li span{min-width:0;overflow-wrap:anywhere;color:var(--bone)}
+.ring{position:fixed;left:30%;top:58%;width:20px;height:6px;margin:-3px 0 0 -10px;border:1.5px solid rgba(236,228,211,.8);border-radius:50%;pointer-events:none;animation:ring 1.6s ease-out forwards}
+@keyframes ring{to{transform:scale(18);opacity:0}}
+@media (prefers-reduced-motion:reduce){.ring{display:none}#n.final{animation:none}body{transition:none}}
+.empty{max-width:34ch;color:var(--bone)}
+</style>
+</head>
+<body>
+<header>
+  <span><i class="dot" id="dot"></i><span id="conn">Connecting</span></span>
+  <button class="chip" id="snd" type="button" aria-pressed="false">Sound off</button>
+</header>
+
+<main id="main">
+  <h1 id="status">Waiting for a throw</h1>
+  <span id="n">0</span>
+  <span class="unit">skips</span>
+  <p id="note" hidden></p>
+  <ul id="log" aria-label="Event log"></ul>
+</main>
+
+<main id="bad" hidden>
+  <h1>No throw to watch</h1>
+  <p class="empty">Open the full link from the thrower's phone. It ends in a code after the # sign.</p>
+</main>
+
+<script>
+(function(){
+'use strict';
+var RELAY='https://ntfy.sh';   // must match the relay set in index.html
+function $(id){return document.getElementById(id);}
+var topic=(location.hash||'').slice(1);
+if(!/^[a-z0-9-]{8,64}$/.test(topic)){$('main').hidden=true;$('bad').hidden=false;$('dot').style.display='none';$('conn').textContent='No link';return;}
+
+var soundOn=false,ac=null;
+$('snd').addEventListener('click',function(){
+  soundOn=!soundOn;this.textContent=soundOn?'Sound on':'Sound off';this.setAttribute('aria-pressed',String(soundOn));
+  if(soundOn&&!ac){try{var AC=window.AudioContext||window.webkitAudioContext;ac=new AC();}catch(e){ac=null;}}
+  if(ac&&ac.state==='suspended')ac.resume();
+});
+function plink(n){
+  if(!ac||!soundOn)return;
+  var t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+  o.type='sine';o.frequency.setValueAtTime(1250*Math.pow(.955,n),t);o.frequency.exponentialRampToValueAtTime(420*Math.pow(.955,n),t+.09);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.16);
+  o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.2);
+}
+function ring(){var r=document.createElement('i');r.className='ring';document.body.appendChild(r);setTimeout(function(){if(r.parentNode)r.parentNode.removeChild(r);},1700);}
+
+function addLog(text,time){
+  var li=document.createElement('li'),t=document.createElement('time'),s=document.createElement('span');
+  var d=new Date((time||Date.now()/1000)*1000);
+  t.textContent=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  s.textContent=text.slice(0,120);
+  li.appendChild(t);li.appendChild(s);
+  var ul=$('log');ul.insertBefore(li,ul.firstChild);
+  while(ul.children.length>8)ul.removeChild(ul.lastChild);
+}
+function setCount(n){$('n').textContent=String(n);}
+function setStatus(s){$('status').textContent=s;}
+function reset(){
+  document.body.classList.remove('final');$('n').classList.remove('final');
+  $('note').hidden=true;setCount(0);
+}
+
+function handle(text,time){
+  var fresh=(Date.now()/1000-time)<6,m;
+  if(/^Armed/.test(text)){reset();setStatus('Armed. Waiting for the throw');}
+  else if(text==='Thrown'){setStatus('In the air');}
+  else if((m=/^Skip (\d{1,3})$/.exec(text))){
+    setCount(+m[1]);setStatus('Skipping');
+    if(fresh){ring();plink(+m[1]);}
+  }else if((m=/^Farewell: (\d{1,3}) skips?(?:\. ([\s\S]{0,80}))?$/.exec(text))){
+    setCount(+m[1]);setStatus(+m[1]===1?'One skip. Farewell':(+m[1]+' skips. Farewell'));
+    $('n').classList.add('final');document.body.classList.add('final');
+    if(m[2]){$('note').textContent=m[2];$('note').hidden=false;}
+  }else return;
+  addLog(text,time);
+}
+
+var es=new EventSource(RELAY+'/'+encodeURIComponent(topic)+'/sse?since=15m');
+es.onopen=function(){$('dot').classList.add('on');$('conn').textContent='Live';};
+es.onerror=function(){$('dot').classList.remove('on');$('conn').textContent='Reconnecting';};
+es.onmessage=function(e){
+  var d;try{d=JSON.parse(e.data);}catch(_){return;}
+  if(!d||d.event!=='message'||typeof d.message!=='string')return;
+  handle(d.message,+d.time||Date.now()/1000);
+};
+})();
+</script>
+</body>
+</html>

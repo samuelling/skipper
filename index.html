@@ -82,6 +82,33 @@ dt{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mist
 dd{margin:2px 0 0;font-size:17px;font-variant-numeric:tabular-nums}
 .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 
+/* Farewell mode */
+input,textarea{-webkit-user-select:text;user-select:text}
+#fwSetup,#fwArmed{justify-content:flex-start;overflow-y:auto;pointer-events:auto;padding-top:calc(var(--top) + 52px)}
+#fwSetup>:first-child,#fwArmed>:first-child{margin-top:auto}
+#fwSetup h2{font-family:var(--display);font-weight:800;font-size:clamp(48px,16vw,96px);line-height:.9;letter-spacing:-.03em;margin:0}
+#fwSetup .lede{margin-top:12px;max-width:40ch}
+.field{border:0;margin:0 0 14px;padding:0;max-width:460px;min-width:0}
+.field legend{padding:0;margin-bottom:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.opt span{display:block;height:100%;padding:12px 14px;border-radius:12px;background:var(--glass);box-shadow:inset 0 0 0 1.5px rgba(236,228,211,.28);font-size:12px;line-height:1.35;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.opt span b{display:block;font-family:var(--display);font-size:17px;letter-spacing:-.01em;margin-bottom:2px}
+.opt input:checked+span{box-shadow:inset 0 0 0 2px var(--lamp)}
+.opt input:focus-visible+span{outline:2px solid var(--lamp);outline-offset:3px}
+.warn{max-width:460px;margin:0 0 14px;padding:12px 14px;border-radius:12px;background:rgba(241,180,94,.14);box-shadow:inset 0 0 0 1px rgba(241,180,94,.5);font-size:13px}
+.warn label{display:flex;gap:10px;align-items:flex-start;margin-top:10px;cursor:pointer}
+.warn input{margin-top:3px;accent-color:var(--lamp)}
+.text{width:100%;max-width:460px;font:inherit;color:var(--bone);background:var(--glass);border:0;border-radius:12px;padding:12px 14px;box-shadow:inset 0 0 0 1.5px rgba(236,228,211,.28)}
+.text::placeholder{color:rgba(185,205,210,.7)}
+.text:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+.linkrow{display:flex;gap:8px;max-width:460px;margin:8px 0 18px}
+.linkrow .text{min-width:0;flex:1;font-size:12px}
+.lbl{display:block;margin-bottom:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mist)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+#fwStatus{font-family:var(--display);font-weight:800;font-size:clamp(30px,9vw,48px);letter-spacing:-.02em;line-height:1;margin:0 0 14px}
 #toast{position:fixed;left:50%;top:calc(var(--top) + 52px);transform:translate(-50%,-8px);background:var(--bone);color:var(--ink);padding:10px 16px;border-radius:999px;
   font-size:13px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:calc(100vw - 40px);text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
@@ -103,7 +130,8 @@ dd{margin:2px 0 0;font-size:17px;font-variant-numeric:tabular-nums}
   <p class="lede">Swing your phone sidearm like a flat stone. Keep a firm grip. The lake does the rest.</p>
   <button class="btn" id="startBtn" type="button">Pick it up</button>
   <button class="link" id="swipeBtn" type="button">No motion sensor? Use swipe mode</button>
-  <p class="fine">Nothing leaves your hand. The page reads the phone's motion sensors to score the throw, and the sinking is only a drawing.</p>
+  <button class="link" id="fwBtn" type="button">Farewell mode: a real throw</button>
+  <p class="fine">In the standard mode nothing leaves your hand. The page reads the phone's motion sensors to score the throw, and the sinking is only a drawing. Farewell mode is the real thing.</p>
 </section>
 
 <section class="panel" id="ready" hidden>
@@ -121,15 +149,52 @@ dd{margin:2px 0 0;font-size:17px;font-variant-numeric:tabular-nums}
   <p class="verdict" id="rVerdict"></p>
   <p class="sub" id="rSub"></p>
   <dl>
-    <div><dt>Distance</dt><dd id="rDist">0 m</dd></div>
-    <div><dt>Release speed</dt><dd id="rSpeed">0 m/s</dd></div>
-    <div><dt>Tilt</dt><dd id="rTilt">0&deg;</dd></div>
-    <div><dt>Spin</dt><dd id="rSpin">0&deg;/s</dd></div>
+    <div><dt id="rL1">Distance</dt><dd id="rDist">0 m</dd></div>
+    <div><dt id="rL2">Release speed</dt><dd id="rSpeed">0 m/s</dd></div>
+    <div><dt id="rL3">Tilt</dt><dd id="rTilt">0&deg;</dd></div>
+    <div><dt id="rL4">Spin</dt><dd id="rSpin">0&deg;/s</dd></div>
   </dl>
   <div class="actions">
     <button class="btn" id="againBtn" type="button">Throw again</button>
     <button class="btn ghost" id="copyBtn" type="button">Copy result</button>
   </div>
+</section>
+
+<section class="panel" id="fwSetup" hidden>
+  <h2>Farewell</h2>
+  <p class="lede">A real throw. The phone's sensors count its actual bounces and send each one to your watcher as it happens.</p>
+  <fieldset class="field">
+    <legend>Landing surface</legend>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="surface" id="fwSoft" checked><span><b>Soft</b>Bed, couch, snow bank, grass. Free to try.</span></label>
+      <label class="opt"><input type="radio" name="surface" id="fwWater"><span><b>Water</b>Pond or lake. The real farewell.</span></label>
+    </div>
+  </fieldset>
+  <div class="warn" id="fwWarn" hidden>
+    <b>Water ends phones.</b> Waterproof ratings cover calm submersion, not a hard impact. Use a phone you can lose, or tie it to a line.
+    <label><input type="checkbox" id="fwOk"><span>I'm throwing a phone I can afford to lose.</span></label>
+  </div>
+  <label class="lbl" for="fwNote">Farewell note (optional)</label>
+  <input class="text" id="fwNote" type="text" maxlength="80" placeholder="Goodbye, old friend" autocomplete="off">
+  <p class="fine" style="margin:18px 0 0">Send this link to whoever should watch. It shows each bounce live.</p>
+  <div class="linkrow">
+    <input class="text" id="fwLink" type="text" readonly aria-label="Watch link">
+    <button class="chip" id="fwCopy" type="button">Copy</button>
+    <button class="chip" id="fwShare" type="button" hidden>Share</button>
+  </div>
+  <div class="actions">
+    <button class="btn" id="fwArm" type="button">Arm it</button>
+    <button class="link" id="fwBack" type="button">Back</button>
+  </div>
+</section>
+
+<section class="panel" id="fwArmed" hidden>
+  <p id="fwStatus">Get a grip: 3</p>
+  <div class="meters">
+    <div class="row"><span>Force</span><div class="bar"><span class="band" id="fwFree"></span><i id="fwGbar"></i></div><output id="fwGval">1.0 g</output></div>
+  </div>
+  <p class="hint">The shaded band is free fall. Each bounce shows as a spike between dips. Keep this page open and the screen on.</p>
+  <div class="actions" style="margin-top:14px"><button class="btn ghost" id="fwDisarm" type="button">Disarm</button></div>
 </section>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -190,7 +255,7 @@ var toastTimer=0;
 function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('on');},2200);}
 
 /* ---------- state ---------- */
-var state='intro',mode='motion',cooldownUntil=0,soundOn=true;
+var state='intro',mode='motion',cooldownUntil=0,soundOn=true,fwMode=false;
 var best=0;
 try{best=parseInt(localStorage.getItem('lastskip.best'),10)||0;}catch(e){}
 function showBest(){$('best').textContent='Best '+best;}
@@ -200,7 +265,9 @@ function setState(s){
   state=s;
   $('intro').hidden=s!=='intro';
   $('ready').hidden=s!=='ready';
-  $('count').hidden=s!=='flying';
+  $('count').hidden=!(s==='flying'||s==='fwArmed');
+  $('fwSetup').hidden=s!=='fwSetup';
+  $('fwArmed').hidden=s!=='fwArmed';
   var res=$('result');
   if(s==='result'){res.hidden=false;void res.offsetWidth;res.classList.add('on');}
   else{res.classList.remove('on');res.hidden=true;}
@@ -247,7 +314,8 @@ function tiltOf(g){var m=Math.hypot(g.x,g.y,g.z)||9.8;return Math.acos(Math.min(
 
 function onMotion(e){
   var r=e.rotationRate,a=e.accelerationIncludingGravity;
-  if(!r||!a||a.x==null||a.y==null||a.z==null)return;
+  if(!a||a.x==null||a.y==null||a.z==null)return;
+  if(!r){if(state!=='fwArmed')return;r={};}
   gotEvents=true;
   var now=performance.now();
   var w=Math.hypot(r.alpha||0,r.beta||0,r.gamma||0);   // deg/s on both iOS and Android
@@ -256,6 +324,7 @@ function onMotion(e){
   var k=.1;grav.x+=(a.x-grav.x)*k;grav.y+=(a.y-grav.y)*k;grav.z+=(a.z-grav.z)*k;   // axis signs differ by platform, so only magnitudes are used
   live.w=w;live.spin=spinNow;live.tilt=tiltOf(grav);
   live.wMax=Math.max(w,live.wMax*.97);live.spinMax=Math.max(spinNow,live.spinMax*.97);
+  if(state==='fwArmed'){var mag=Math.hypot(a.x,a.y,a.z);live.g=mag/9.81;FW.lastEv=now;fwSample(now,mag);return;}
   if(state!=='ready'||mode!=='motion'||now<cooldownUntil)return;
 
   var am=Math.hypot(a.x,a.y,a.z);
@@ -473,7 +542,7 @@ function frame(now){
   var time=now/1000;
   ctx.clearRect(0,0,W,H);
   var wy=waterLine();
-  if(state==='flying'||state==='result'){
+  if(!fwMode&&(state==='flying'||state==='result')){
     var f=flight,tSec=(now-f.start)/1000;
     // contacts: ripples, splashes, counter, sound
     while(f.next<=f.n&&tSec>=f.segs[f.next].t1){
@@ -508,12 +577,13 @@ function frame(now){
   }else{
     camX=0;scrollIdle+=.15;
     drawScene(time,scrollIdle);
-    if(state==='ready'||state==='intro'){
+    if(fwMode||state==='ready'||state==='intro'){
       if(Math.random()<.012)ripples.push({x:W*(.15+Math.random()*.7),t:now,size:1+Math.random()*2});
       drawRipples(now,0);
     }
   }
   if(state==='ready'&&mode==='motion')updateMeters();
+  if(state==='fwArmed')updateFw();
   requestAnimationFrame(frame);
 }
 
@@ -550,6 +620,7 @@ function tipFor(f){
 }
 var lastText='';
 function finish(f){
+  setLabels('Distance','Release speed','Tilt','Spin');
   var n=f.n,newBest=n>best;
   if(newBest){best=n;try{localStorage.setItem('lastskip.best',String(best));}catch(e){}showBest();}
   $('rBig').textContent=String(n);
@@ -563,9 +634,162 @@ function finish(f){
   setState('result');
 }
 
+/* ---------- farewell mode: a real throw, real bounce counting, live relay ---------- */
+// FW-DETECT-START
+var FW={
+  relay:'https://ntfy.sh',          // public relay; point this at your own ntfy server if you prefer
+  freeG:7,                          // m/s^2: below this the phone counts as in free fall
+  launchMs:90,reboundMs:50,windowMs:70,settleMs:650,waitMs:30000,
+  hit:{soft:11,water:20},           // m/s^2: minimum peak for a landing to count as contact
+  surface:'soft',phase:'idle',topic:'',note:'',tick:0,lock:null,
+  freeSince:0,airStart:0,hitStart:0,tPost:0,peak:0,maxHit:0,contactOk:false,
+  contacts:0,skips:0,flightMs:0,t0:0,armedAt:0,lastEv:0,finalAck:false
+};
+function fwSample(now,m){
+  var free=m<FW.freeG;
+  if(FW.phase==='wait'){
+    if(free){
+      if(!FW.freeSince)FW.freeSince=now;
+      if(now-FW.freeSince>=FW.launchMs){FW.phase='air';FW.airStart=FW.freeSince;fwOnLaunch();}
+    }else FW.freeSince=0;
+  }else if(FW.phase==='air'){
+    if(!free){FW.phase='hit';FW.hitStart=now;FW.peak=m;FW.flightMs+=now-FW.airStart;FW.freeSince=0;}
+  }else if(FW.phase==='hit'){
+    if(m>FW.peak)FW.peak=m;
+    if(free){if(!FW.freeSince)FW.freeSince=now;}else FW.freeSince=0;
+    if(now-FW.hitStart>=FW.windowMs){
+      FW.contactOk=FW.peak>=FW.hit[FW.surface];
+      if(FW.contactOk){FW.contacts++;if(FW.peak>FW.maxHit)FW.maxHit=FW.peak;fwOnContact();}
+      FW.phase='post';FW.tPost=now;
+    }
+  }else if(FW.phase==='post'){
+    if(free){
+      if(!FW.freeSince)FW.freeSince=now;
+      if(now-FW.freeSince>=FW.reboundMs){
+        if(FW.contactOk){FW.skips++;fwOnSkip(FW.skips);}
+        FW.phase='air';FW.airStart=FW.freeSince;
+      }
+    }else FW.freeSince=0;
+  }
+}
+function fwShouldEnd(now){return FW.phase==='post'&&!FW.freeSince&&now-FW.tPost>FW.settleMs;}
+function fwFinalSkips(){return FW.contacts>0?Math.max(0,FW.contacts-1):0;}   // the last contact is the one that did not rebound
+// FW-DETECT-END
+
+function fwStatus(s){$('fwStatus').textContent=s;}
+function fwSend(text,isFinal){
+  try{
+    fetch(FW.relay+'/'+FW.topic,{method:'POST',body:text,mode:'no-cors',keepalive:true})
+      .then(function(){if(isFinal)FW.finalAck=true;},function(){});
+  }catch(e){}
+}
+function fwOnLaunch(){fwStatus('In the air');fwSend('Thrown');}
+function fwOnContact(){ripples.push({x:W*(.25+Math.random()*.5),t:performance.now(),size:3});}
+function fwOnSkip(n){fwStatus('Skipping');$('countNum').textContent=String(n);plink(n);buzz(12);fwSend('Skip '+n);}
+
+function fwTopic(){
+  try{var s=localStorage.getItem('lastskip.topic');if(s&&/^[a-z0-9-]{12,}$/.test(s))return s;}catch(e){}
+  var a=new Uint8Array(10),t='skipper-';
+  try{crypto.getRandomValues(a);}catch(e){for(var i=0;i<10;i++)a[i]=Math.floor(Math.random()*256);}
+  for(var j=0;j<10;j++)t+=(a[j]%36).toString(36);
+  try{localStorage.setItem('lastskip.topic',t);}catch(e){}
+  return t;
+}
+function fwLinkURL(){return new URL('watch.html',window.location.href).href.split('#')[0]+'#'+FW.topic;}
+function copyText(text,okMsg){
+  function fallback(){
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);toast(ok?okMsg:text);
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast(okMsg);},fallback);}
+  else fallback();
+}
+function setLabels(a,b,c,d){$('rL1').textContent=a;$('rL2').textContent=b;$('rL3').textContent=c;$('rL4').textContent=d;}
+
+function fwUpdateWarn(){
+  var water=$('fwWater').checked;
+  $('fwWarn').hidden=!water;
+  $('fwArm').disabled=water&&!$('fwOk').checked;
+}
+function fwOpenSetup(){
+  fwMode=true;FW.phase='idle';
+  FW.topic=fwTopic();
+  $('fwLink').value=fwLinkURL();
+  $('fwShare').hidden=!navigator.share;
+  fwUpdateWarn();
+  setState('fwSetup');
+}
+function fwReleaseLock(){try{if(FW.lock){FW.lock.release();FW.lock=null;}}catch(e){}}
+function fwArm(){
+  window.addEventListener('devicemotion',onMotion);
+  gotEvents=false;
+  FW.surface=$('fwWater').checked?'water':'soft';
+  FW.note=($('fwNote').value||'').trim().slice(0,80);
+  FW.phase='arming';FW.freeSince=0;FW.airStart=0;FW.maxHit=0;FW.contactOk=false;FW.contacts=0;FW.skips=0;FW.flightMs=0;FW.finalAck=false;
+  FW.t0=FW.armedAt=FW.lastEv=performance.now();
+  live.g=1;
+  $('countNum').textContent='0';
+  $('fwFree').style.width=(FW.freeG/9.81/8*100)+'%';
+  fwStatus('Get a grip: 3');
+  setState('fwArmed');
+  try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(l){FW.lock=l;},function(){});}catch(e){}
+  clearInterval(FW.tick);FW.tick=setInterval(fwTick,100);
+  fwSend('Armed. Waiting for the throw.');
+}
+function fwDisarm(msg){
+  clearInterval(FW.tick);fwReleaseLock();FW.phase='idle';
+  if(msg)toast(msg);
+  setState('fwSetup');
+}
+function fwTick(){
+  var now=performance.now();
+  if(!gotEvents&&now-FW.t0>2000){fwDisarm('No motion data from this device.');return;}
+  if(FW.phase==='arming'){
+    var left=Math.ceil((3000-(now-FW.t0))/1000);
+    if(left>0)fwStatus('Get a grip: '+left);
+    else{FW.phase='wait';FW.armedAt=now;fwStatus('Armed. Throw it.');buzz(30);}
+    return;
+  }
+  if(FW.phase==='wait'&&now-FW.armedAt>FW.waitMs){fwDisarm('Timed out. Arm it again when ready.');return;}
+  if((FW.phase==='air'||FW.phase==='hit'||FW.phase==='post')&&now-FW.lastEv>2500){fwEnd();return;}
+  if(fwShouldEnd(now))fwEnd();
+}
+function fwEnd(){
+  if(FW.phase==='done'||FW.phase==='idle')return;
+  FW.phase='done';clearInterval(FW.tick);fwReleaseLock();
+  var n=fwFinalSkips(),msg='Farewell: '+n+' skip'+(n===1?'':'s')+(FW.note?'. '+FW.note:'');
+  fwSend(msg,true);
+  setTimeout(function(){fwSend(msg,true);},700);
+  setTimeout(function(){fwSend(msg,true);},2200);
+  $('countNum').textContent=String(n);
+  plunk();buzz(60);
+  fwStatus(n+' skip'+(n===1?'':'s')+'. Farewell.');
+  setTimeout(fwShowResult,1500);
+}
+function fwShowResult(){
+  if(state!=='fwArmed')return;
+  var n=fwFinalSkips();
+  setLabels('Contacts','Flight time','Hardest hit','Surface');
+  $('rBig').textContent=String(n);
+  $('rVerdict').textContent=FW.contacts===0?'No contact detected.':(n===0?'One landing, no skip.':verdictFor(n));
+  $('rSub').textContent=FW.finalAck?'Final count delivered to your watch link.':'Final count sent. Delivery could not be confirmed.';
+  $('rDist').textContent=String(FW.contacts);
+  $('rSpeed').textContent=(FW.flightMs/1000).toFixed(1)+' s';
+  $('rTilt').textContent=(FW.maxHit/9.81).toFixed(1)+' g';
+  $('rSpin').textContent=FW.surface==='water'?'Water':'Soft';
+  lastText='Farewell: '+n+' skip'+(n===1?'':'s')+(FW.note?'. '+FW.note:'');
+  setState('result');
+}
+function updateFw(){
+  var g=live.g||0;
+  $('fwGbar').style.width=(clamp(g/8,0,1)*100)+'%';
+  $('fwGval').textContent=g.toFixed(1)+' g';
+}
+
 /* ---------- buttons ---------- */
 function beginReady(){
-  live.wMax=0;live.spinMax=0;sw.active=false;freeFrames=0;
+  fwMode=false;live.wMax=0;live.spinMax=0;sw.active=false;freeFrames=0;
   cooldownUntil=performance.now()+500;
   updateHint();setState('ready');
 }
@@ -583,7 +807,7 @@ $('startBtn').addEventListener('click',function(){
   }else{startMotion();beginReady();}
 });
 $('swipeBtn').addEventListener('click',function(){initAudio();mode='swipe';beginReady();});
-$('againBtn').addEventListener('click',function(){beginReady();});
+$('againBtn').addEventListener('click',function(){if(fwMode)fwOpenSetup();else beginReady();});
 $('copyBtn').addEventListener('click',function(){
   function fallback(){
     var ta=document.createElement('textarea');ta.value=lastText;ta.style.position='fixed';ta.style.opacity='0';
@@ -596,6 +820,27 @@ $('copyBtn').addEventListener('click',function(){
 $('soundBtn').addEventListener('click',function(){
   soundOn=!soundOn;this.textContent=soundOn?'Sound on':'Sound off';this.setAttribute('aria-pressed',String(soundOn));
   if(soundOn)initAudio();
+});
+
+$('fwBtn').addEventListener('click',function(){initAudio();fwOpenSetup();});
+$('fwBack').addEventListener('click',function(){fwMode=false;setState('intro');});
+$('fwSoft').addEventListener('change',fwUpdateWarn);
+$('fwWater').addEventListener('change',fwUpdateWarn);
+$('fwOk').addEventListener('change',fwUpdateWarn);
+$('fwCopy').addEventListener('click',function(){copyText($('fwLink').value,'Watch link copied.');});
+$('fwShare').addEventListener('click',function(){
+  try{navigator.share({title:'Watch my phone skip',text:'Watch the throw live:',url:$('fwLink').value}).catch(function(){});}catch(e){}
+});
+$('fwDisarm').addEventListener('click',function(){fwDisarm('Disarmed.');});
+$('fwArm').addEventListener('click',function(){
+  initAudio();
+  var DME=window.DeviceMotionEvent;
+  if(!DME){toast('This device has no motion sensor.');return;}
+  if(typeof DME.requestPermission==='function'){
+    DME.requestPermission().then(function(res){
+      if(res==='granted')fwArm();else toast('Motion access declined.');
+    }).catch(function(){toast('Motion access unavailable.');});
+  }else fwArm();
 });
 
 setState('intro');
