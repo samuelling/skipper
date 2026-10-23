@@ -190,6 +190,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
     <div class="row"><span>Spin</span><div class="bar"><i id="mSpin"></i></div><output id="vSpin">0&deg;/s</output></div>
   </div>
   <p class="hint" id="hint">Hold it flat, tilted about <em>20&deg;</em>. Swing sidearm, stop your hand, keep hold.</p>
+  <div class="actions" style="margin-top:6px"><button class="link" id="readyBack" type="button">&larr; Back</button></div>
 </section>
 
 <section class="panel" id="result" hidden>
@@ -206,6 +207,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <div class="actions">
     <button class="btn" id="againBtn" type="button">Throw again</button>
     <button class="btn ghost" id="copyBtn" type="button">Copy result</button>
+    <button class="link" id="resultBack" type="button">&larr; Home</button>
   </div>
 </section>
 
@@ -909,6 +911,9 @@ $('soundBtn').addEventListener('click',function(){
   if(soundOn)initAudio();
 });
 
+function goHome(){fwMode=false;fwCloseFeed();sw.active=false;pts=null;setState('intro');}
+$('readyBack').addEventListener('click',goHome);
+$('resultBack').addEventListener('click',goHome);
 $('fwBtn').addEventListener('click',function(){initAudio();fwOpenSetup();});
 $('fwBack').addEventListener('click',function(){fwMode=false;fwCloseFeed();setState('intro');});
 $('fwSoft').addEventListener('change',fwUpdateWarn);
