@@ -16,5 +16,8 @@ Counts the phone's *actual* bounces and sends each one live to a watcher.
 - **Live broadcast:** the thrower's screen shows a red LIVE badge, how many watchers have opened the link, and each packet as it leaves ("sending" then "delivered"). The watch page shows a LIVE pill and a heartbeat line that spikes on every skip. If the stream goes quiet for ~4.5 s after the throw, the watcher sees SIGNAL LOST, the line flatlines and a tone plays. If the final tally lands late, it revives to the farewell.
 - **Honest limits:** browsers sample motion at ~60 Hz, so late hops shorter than ~50 ms are missed and the count can run low. The page cannot know the phone's fate: each bounce is sent as it happens, and the final tally goes out about 0.7 s after the last contact, if the phone still has a connection. Water kills phones, waterproof or not. Try the soft surface first.
 
+## Tutorial
+An irreverent how-to opens on first visit and from the "How does this work?" buttons on the home and Farewell setup screens. It covers both modes, the Farewell steps, the water warning and troubleshooting.
+
 ## Hosting
 Phones only give pages motion data over HTTPS. Enable GitHub Pages on `main` and open `https://<user>.github.io/skipper/`. iOS asks for motion permission on the first tap.

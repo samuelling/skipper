@@ -50,6 +50,24 @@ h1 span+span{color:var(--lamp);margin-left:.18em}
 #intro>:first-child{margin-top:auto}
 #intro h1{font-size:clamp(56px,17vw,112px)}
 #intro .lede{margin:14px 0 20px}
+/* How-to panel */
+#how{overflow-y:auto;pointer-events:auto;background:linear-gradient(to bottom,rgba(8,20,26,.95),rgba(8,20,26,.98));padding-top:calc(var(--top) + 6px);padding-bottom:calc(var(--bottom) + 24px)}
+.how-in{flex:none;width:100%;max-width:520px;display:block}
+.how-in h2{font-family:var(--display);font-weight:800;font-size:clamp(40px,12vw,64px);line-height:.92;letter-spacing:-.03em;margin:10px 0 0;text-wrap:balance}
+.how-in h2 span{color:var(--lamp)}
+.how-in h3{font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.02em;margin:30px 0 8px}
+.how-in h3 small{display:block;font-family:var(--mono);font-weight:400;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);margin-bottom:3px}
+.how-in p{margin:0 0 10px;max-width:52ch}
+.how-in .lede{margin:14px 0 0;font-size:15px}
+.steps{list-style:none;counter-reset:s;margin:0;padding:0;display:grid;gap:10px}
+.steps li{counter-increment:s;position:relative;padding:3px 0 0 42px;min-height:30px;min-width:0;overflow-wrap:anywhere}
+.steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:28px;height:28px;border-radius:50%;background:var(--lamp);color:var(--ink);font-family:var(--display);font-weight:800;font-size:15px;display:grid;place-items:center}
+.faq{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin:0;max-width:none}
+.faq div{border-top:1px solid rgba(236,228,211,.22);padding-top:8px}
+.faq dt{font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:-.01em;text-transform:none;color:var(--bone)}
+.faq dd{margin:2px 0 0;font-size:13px;color:var(--mist);font-variant-numeric:normal}
+.how-in .warn{max-width:none}
+.how-in .btn{margin-top:26px}
 .notice{max-width:460px;margin:0 0 14px;padding:12px 14px;border-radius:12px;background:rgba(241,180,94,.14);box-shadow:inset 0 0 0 1px rgba(241,180,94,.5);font-size:13px}
 .notice b{font-family:var(--display);font-size:17px;letter-spacing:-.01em;display:block;margin-bottom:2px}
 .modes{display:grid;gap:12px;width:100%;max-width:460px;margin-bottom:6px}
@@ -186,6 +204,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
       <span class="go">Pick it up &rarr;</span>
     </button>
   </div>
+  <button class="btn ghost" id="howBtn" type="button" style="font-size:16px;padding:12px 20px;margin-top:8px">How does this work?</button>
   <button class="link" id="swipeBtn" type="button">No motion sensor? Use swipe mode</button>
 </section>
 
@@ -217,6 +236,50 @@ input,textarea{-webkit-user-select:text;user-select:text}
   </div>
 </section>
 
+<section class="panel" id="how" hidden>
+  <div class="how-in">
+    <button class="link" id="howTop" type="button">&larr; Back</button>
+    <h2>How to skip <span>a phone</span></h2>
+    <p class="lede">The short version: you throw a phone, it counts its own bounces, and a friend watches live. Start on a couch.</p>
+
+    <h3><small>What is this</small>A rock-skipping app where you are the rock</h3>
+    <p>Two modes. One is a game. The other is a goodbye.</p>
+
+    <h3><small>Skip mode</small>The safe one</h3>
+    <ol class="steps">
+      <li>Hold the phone flat, screen up, tilted about 20&deg;, like a stone you respect.</li>
+      <li>Swing sidearm, then stop your hand. Keep gripping. The phone feels the swing and the lake does the rest.</li>
+      <li>Watch the three meters: swing, tilt, spin. Better throw, more skips.</li>
+    </ol>
+    <p style="margin-top:12px;color:var(--mist);font-size:13px">The phone never leaves your hand in this mode. If it does, you have wandered into Farewell mode and skipped some steps.</p>
+
+    <h3><small>Farewell mode</small>The real thing</h3>
+    <ol class="steps">
+      <li>Send the watch link to a friend. When they open it, your screen says &ldquo;1 watching&rdquo;. No audience? It still works. You just go unobserved.</li>
+      <li>Pick a surface. Soft is a bed, couch or snow bank. Water is the whole point, but read the warning below first.</li>
+      <li>Tap <b>Go live and arm</b>. You get three seconds to get a grip. Then the phone starts listening.</li>
+      <li>Throw it. Flat, sidearm, committed.</li>
+      <li>In the air the phone feels weightless. Every landing is a spike. Every rebound is a skip. Each one is beamed to your watcher the moment it happens.</li>
+      <li>The last landing doesn&rsquo;t rebound, and that&rsquo;s the end. The final tally goes out. If the signal just stops, your watcher sees the heartbeat line go flat.</li>
+    </ol>
+
+    <h3><small>Before you throw anything</small>Please read this part</h3>
+    <div class="warn">
+      <p><b>Test on a bed, couch or snow bank first.</b> Your phone does not need to die to learn how to count.</p>
+      <p style="margin:0"><b>Water ends phones.</b> &ldquo;Waterproof&rdquo; means a gentle dunk, not a lake at speed. Use a phone you have already emotionally moved on from. Tie a string to it if you want it back. And don&rsquo;t throw it at people, dogs or ducks.</p>
+    </div>
+
+    <h3><small>Troubleshooting</small>If it doesn&rsquo;t work</h3>
+    <dl class="faq">
+      <div><dt>It says there&rsquo;s no motion data</dt><dd>It only works on phones and iPads. On iPhone, tap Allow when it asks. Missed the prompt? Close the tab and open the page again.</dd></div>
+      <div><dt>The screen locked mid-throw</dt><dd>Keep the page open and the screen on. The app asks the phone to stay awake, but some phones ignore it. Turn off auto-lock if yours does.</dd></div>
+      <div><dt>The count seems low</dt><dd>The phone checks its motion about 60 times a second, so the tiniest last hops slip through. Reality is faster than your phone&rsquo;s reflexes.</dd></div>
+      <div><dt>My friend sees nothing</dt><dd>Both phones need internet. At a lake with one bar, the broadcast may never leave. Test the link at home first, with a couch.</dd></div>
+    </dl>
+    <button class="btn" id="howDone" type="button">Got it. Let&rsquo;s skip.</button>
+  </div>
+</section>
+
 <section class="panel" id="fwSetup" hidden>
   <h2>Farewell</h2>
   <p class="lede">Go live. Your watcher sees every bounce as it happens, right up to the phone's last signal.</p>
@@ -244,6 +307,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <input class="text" id="fwNote" type="text" maxlength="80" placeholder="Goodbye, old friend" autocomplete="off">
   <div class="actions" style="margin-top:18px">
     <button class="btn" id="fwArm" type="button">Go live and arm</button>
+    <button class="link" id="fwHow" type="button">How does this work?</button>
     <button class="link" id="fwBack" type="button">Back</button>
   </div>
 </section>
@@ -329,6 +393,9 @@ function setState(s){
   $('ready').hidden=s!=='ready';
   $('count').hidden=!(s==='flying'||s==='fwArmed');
   $('fwSetup').hidden=s!=='fwSetup';
+  $('how').hidden=s!=='how';
+  $('topbar').style.visibility=s==='how'?'hidden':'visible';
+  if(s==='how')$('how').scrollTop=0;
   $('fwArmed').hidden=s!=='fwArmed';
   var res=$('result');
   if(s==='result'){res.hidden=false;void res.offsetWidth;res.classList.add('on');}
@@ -922,6 +989,13 @@ $('soundBtn').addEventListener('click',function(){
   var mobile=/Android|iPhone|iPad|iPod/i.test(ua)||(/Mac/i.test(navigator.platform||'')&&touch>1)||(touch>0&&window.matchMedia&&matchMedia('(pointer: coarse)').matches);
   if(!mobile){$('desktopNotice').hidden=false;$('swipeBtn').textContent='Try the swipe preview anyway';}
 })();
+var howFrom='intro';
+function openHow(from){howFrom=from;setState('how');}
+function closeHow(){try{localStorage.setItem('lastskip.seenHow','1');}catch(e){}setState(howFrom);}
+$('howBtn').addEventListener('click',function(){openHow('intro');});
+$('fwHow').addEventListener('click',function(){openHow('fwSetup');});
+$('howTop').addEventListener('click',closeHow);
+$('howDone').addEventListener('click',closeHow);
 function goHome(){fwMode=false;fwCloseFeed();sw.active=false;pts=null;setState('intro');}
 $('readyBack').addEventListener('click',goHome);
 $('resultBack').addEventListener('click',goHome);
@@ -947,6 +1021,7 @@ $('fwArm').addEventListener('click',function(){
 });
 
 setState('intro');
+(function(){var seen=false;try{seen=!!localStorage.getItem('lastskip.seenHow');}catch(e){}if(!seen)openHow('intro');})();
 requestAnimationFrame(frame);
 })();
 </script>
